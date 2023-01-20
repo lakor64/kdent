@@ -1,0 +1,890 @@
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/CMakeLists.txt plasma-workspace-5.23.4/CMakeLists.txt
+--- plasma-workspace-5.23.4.orig/CMakeLists.txt	2021-11-30 14:17:32.000000000 +0100
++++ plasma-workspace-5.23.4/CMakeLists.txt	2021-12-11 03:09:57.704435300 +0100
+@@ -37,9 +37,13 @@
+ include(ECMQMLModules)
+ include(ECMGenerateExportHeader)
+ 
++if (NOT WIN32)
++  set(KF5_EXTRA Wayland Su)
++endif()
++
+ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS
+-                    Plasma DocTools Runner Notifications NotifyConfig Su NewStuff Wallet IdleTime
+-                    Declarative I18n KCMUtils TextWidgets Crash GlobalAccel DBusAddons Wayland
++                    Plasma DocTools Runner Notifications NotifyConfig NewStuff Wallet IdleTime
++                    Declarative I18n KCMUtils TextWidgets Crash GlobalAccel DBusAddons ${KF5_EXTRA}
+                     CoreAddons People ActivitiesStats Activities KIO Prison PlasmaQuick Package
+                     GuiAddons Archive ItemModels IconThemes UnitConversion ItemModels Init TextEditor)
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/ActionButton.qml plasma-workspace-5.23.4/sddm-theme/components/ActionButton.qml
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/ActionButton.qml	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/ActionButton.qml	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1,115 @@
++/*
++    SPDX-FileCopyrightText: 2016 David Edmundson <davidedmundson@kde.org>
++
++    SPDX-License-Identifier: LGPL-2.0-or-later
++*/
++
++import QtQuick 2.8
++import org.kde.plasma.core 2.0 as PlasmaCore
++import org.kde.plasma.components 3.0 as PlasmaComponents3
++
++Item {
++    id: root
++    property alias text: label.text
++    property alias iconSource: icon.source
++    property alias containsMouse: mouseArea.containsMouse
++    property alias font: label.font
++    property alias labelRendering: label.renderType
++    property alias circleOpacity: iconCircle.opacity
++    property alias circleVisiblity: iconCircle.visible
++    property int fontSize: PlasmaCore.Theme.defaultFont.pointSize + 1
++    readonly property bool softwareRendering: GraphicsInfo.api === GraphicsInfo.Software
++    signal clicked
++
++    activeFocusOnTab: true
++
++    property int iconSize: PlasmaCore.Units.gridUnit * 3
++
++    implicitWidth: Math.max(iconSize + PlasmaCore.Units.largeSpacing * 2, label.contentWidth)
++    implicitHeight: iconSize + PlasmaCore.Units.smallSpacing + label.implicitHeight
++
++    opacity: activeFocus || containsMouse ? 1 : 0.85
++        Behavior on opacity {
++            PropertyAnimation { // OpacityAnimator makes it turn black at random intervals
++                duration: PlasmaCore.Units.longDuration
++                easing.type: Easing.InOutQuad
++            }
++    }
++
++    Rectangle {
++        id: iconCircle
++        anchors.centerIn: icon
++        width: iconSize + PlasmaCore.Units.smallSpacing
++        height: width
++        radius: width / 2
++        color: softwareRendering ?  PlasmaCore.ColorScope.backgroundColor : PlasmaCore.ColorScope.textColor
++        opacity: root.activeFocus || containsMouse ? (softwareRendering ? 0.8 : 0.15) : (softwareRendering ? 0.6 : 0)
++        Behavior on opacity {
++                PropertyAnimation { // OpacityAnimator makes it turn black at random intervals
++                    duration: PlasmaCore.Units.longDuration
++                    easing.type: Easing.InOutQuad
++                }
++        }
++    }
++
++    Rectangle {
++        anchors.centerIn: iconCircle
++        width: iconCircle.width
++        height: width
++        radius: width / 2
++        scale: mouseArea.containsPress ? 1 : 0
++        color: PlasmaCore.ColorScope.textColor
++        opacity: 0.15
++        Behavior on scale {
++                PropertyAnimation {
++                    duration: PlasmaCore.Units.shortDuration
++                    easing.type: Easing.InOutQuart
++                }
++        }
++    }
++
++    PlasmaCore.IconItem {
++        id: icon
++        anchors {
++            top: parent.top
++            horizontalCenter: parent.horizontalCenter
++        }
++        width: iconSize
++        height: iconSize
++
++        colorGroup: PlasmaCore.ColorScope.colorGroup
++        active: mouseArea.containsMouse || root.activeFocus
++    }
++
++    PlasmaComponents3.Label {
++        id: label
++        font.pointSize: root.fontSize
++        anchors {
++            top: icon.bottom
++            topMargin: (softwareRendering ? 1.5 : 1) * PlasmaCore.Units.smallSpacing
++            left: parent.left
++            right: parent.right
++        }
++        style: softwareRendering ? Text.Outline : Text.Normal
++        styleColor: softwareRendering ? PlasmaCore.ColorScope.backgroundColor : "transparent" //no outline, doesn't matter
++        horizontalAlignment: Text.AlignHCenter
++        verticalAlignment: Text.AlignTop
++        wrapMode: Text.WordWrap
++        font.underline: root.activeFocus
++    }
++
++    MouseArea {
++        id: mouseArea
++        hoverEnabled: true
++        onClicked: root.clicked()
++        anchors.fill: parent
++    }
++
++    Keys.onEnterPressed: clicked()
++    Keys.onReturnPressed: clicked()
++    Keys.onSpacePressed: clicked()
++
++    Accessible.onPressAction: clicked()
++    Accessible.role: Accessible.Button
++    Accessible.name: label.text
++}
+Files plasma-workspace-5.23.4.orig/sddm-theme/components/artwork/logout_primary.svgz and plasma-workspace-5.23.4/sddm-theme/components/artwork/logout_primary.svgz differ
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/artwork/README.txt plasma-workspace-5.23.4/sddm-theme/components/artwork/README.txt
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/artwork/README.txt	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/artwork/README.txt	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1 @@
++After editing SVG files be sure to run currentColorFillFix.sh from plasma-framework
+\ No newline at end of file
+Files plasma-workspace-5.23.4.orig/sddm-theme/components/artwork/restart_primary.svgz and plasma-workspace-5.23.4/sddm-theme/components/artwork/restart_primary.svgz differ
+Files plasma-workspace-5.23.4.orig/sddm-theme/components/artwork/shutdown_primary.svgz and plasma-workspace-5.23.4/sddm-theme/components/artwork/shutdown_primary.svgz differ
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/Battery.qml plasma-workspace-5.23.4/sddm-theme/components/Battery.qml
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/Battery.qml	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/Battery.qml	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1,43 @@
++/*
++    SPDX-FileCopyrightText: 2016 Kai Uwe Broulik <kde@privat.broulik.de>
++
++    SPDX-License-Identifier: LGPL-2.0-or-later
++*/
++
++import QtQuick 2.2
++
++import org.kde.plasma.core 2.0 as PlasmaCore
++import org.kde.plasma.components 3.0 as PlasmaComponents3
++import org.kde.plasma.workspace.components 2.0 as PW
++
++Row {
++    id: row
++
++    property int fontSize: PlasmaCore.Theme.defaultFont.pointSize
++
++    spacing: PlasmaCore.Units.smallSpacing
++    visible: pmSource.data["Battery"]["Has Cumulative"]
++
++    PlasmaCore.DataSource {
++        id: pmSource
++        engine: "powermanagement"
++        connectedSources: ["Battery", "AC Adapter"]
++    }
++
++    PW.BatteryIcon {
++        id: battery
++        hasBattery: pmSource.data["Battery"]["Has Battery"] || false
++        percent: pmSource.data["Battery"]["Percent"] || 0
++        pluggedIn: pmSource.data["AC Adapter"] ? pmSource.data["AC Adapter"]["Plugged in"] : false
++
++        height: batteryLabel.height
++        width: height
++    }
++
++    PlasmaComponents3.Label {
++        id: batteryLabel
++        font.pointSize: row.fontSize
++        text: i18nd("plasma_lookandfeel_org.kde.lookandfeel","%1%", battery.percent)
++        Accessible.name: i18nd("plasma_lookandfeel_org.kde.lookandfeel","Battery at %1%", battery.percent)
++    }
++}
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/Clock.qml plasma-workspace-5.23.4/sddm-theme/components/Clock.qml
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/Clock.qml	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/Clock.qml	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1,37 @@
++/*
++    SPDX-FileCopyrightText: 2016 David Edmundson <davidedmundson@kde.org>
++
++    SPDX-License-Identifier: LGPL-2.0-or-later
++*/
++
++import QtQuick 2.8
++import QtQuick.Layouts 1.1
++import QtQuick.Controls 2.5
++import org.kde.plasma.core 2.0
++
++ColumnLayout {
++    readonly property bool softwareRendering: GraphicsInfo.api === GraphicsInfo.Software
++
++    Label {
++        text: Qt.formatTime(timeSource.data["Local"]["DateTime"])
++        color: ColorScope.textColor
++        style: softwareRendering ? Text.Outline : Text.Normal
++        styleColor: softwareRendering ? ColorScope.backgroundColor : "transparent" //no outline, doesn't matter
++        font.pointSize: 48
++        Layout.alignment: Qt.AlignHCenter
++    }
++    Label {
++        text: Qt.formatDate(timeSource.data["Local"]["DateTime"], Qt.DefaultLocaleLongDate)
++        color: ColorScope.textColor
++        style: softwareRendering ? Text.Outline : Text.Normal
++        styleColor: softwareRendering ? ColorScope.backgroundColor : "transparent" //no outline, doesn't matter
++        font.pointSize: 24
++        Layout.alignment: Qt.AlignHCenter
++    }
++    DataSource {
++        id: timeSource
++        engine: "time"
++        connectedSources: ["Local"]
++        interval: 1000
++    }
++}
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/SessionManagementScreen.qml plasma-workspace-5.23.4/sddm-theme/components/SessionManagementScreen.qml
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/SessionManagementScreen.qml	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/SessionManagementScreen.qml	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1,109 @@
++/*
++    SPDX-FileCopyrightText: 2016 David Edmundson <davidedmundson@kde.org>
++
++    SPDX-License-Identifier: LGPL-2.0-or-later
++*/
++
++import QtQuick 2.2
++
++import QtQuick.Layouts 1.1
++import QtQuick.Controls 1.1
++
++import org.kde.plasma.core 2.0 as PlasmaCore
++import org.kde.plasma.components 3.0 as PlasmaComponents3
++
++Item {
++    id: root
++
++    /*
++     * Any message to be displayed to the user, visible above the text fields
++     */
++    property alias notificationMessage: notificationsLabel.text
++
++    /*
++     * A list of Items (typically ActionButtons) to be shown in a Row beneath the prompts
++     */
++    property alias actionItems: actionItemsLayout.children
++
++    /*
++     * A model with a list of users to show in the view
++     * The following roles should exist:
++     *  - name
++     *  - iconSource
++     *
++     * The following are also handled:
++     *  - vtNumber
++     *  - displayNumber
++     *  - session
++     *  - isTty
++     */
++    property alias userListModel: userListView.model
++
++    /*
++     * Self explanatory
++     */
++    property alias userListCurrentIndex: userListView.currentIndex
++    property alias userListCurrentItem: userListView.currentItem
++    property bool showUserList: true
++
++    property alias userList: userListView
++
++    property int fontSize: PlasmaCore.Theme.defaultFont.pointSize + 2
++
++    default property alias _children: innerLayout.children
++
++    UserList {
++        id: userListView
++        visible: showUserList && y > 0
++        anchors {
++            bottom: parent.verticalCenter
++            left: parent.left
++            right: parent.right
++        }
++        fontSize: root.fontSize
++    }
++
++    //goal is to show the prompts, in ~16 grid units high, then the action buttons
++    //but collapse the space between the prompts and actions if there's no room
++    //ui is constrained to 16 grid units wide, or the screen
++    ColumnLayout {
++        id: prompts
++        anchors.top: parent.verticalCenter
++        anchors.topMargin: PlasmaCore.Units.gridUnit * 0.5
++        anchors.left: parent.left
++        anchors.right: parent.right
++        anchors.bottom: parent.bottom
++        PlasmaComponents3.Label {
++            id: notificationsLabel
++            font.pointSize: root.fontSize
++            Layout.maximumWidth: PlasmaCore.Units.gridUnit * 16
++            Layout.alignment: Qt.AlignHCenter
++            Layout.fillWidth: true
++            horizontalAlignment: Text.AlignHCenter
++            wrapMode: Text.WordWrap
++            font.italic: true
++        }
++        ColumnLayout {
++            Layout.minimumHeight: implicitHeight
++            Layout.maximumHeight: PlasmaCore.Units.gridUnit * 10
++            Layout.maximumWidth: PlasmaCore.Units.gridUnit * 16
++            Layout.alignment: Qt.AlignHCenter
++            ColumnLayout {
++                id: innerLayout
++                Layout.alignment: Qt.AlignHCenter
++                Layout.fillWidth: true
++            }
++            Item {
++                Layout.fillHeight: true
++            }
++        }
++        Row { //deliberately not rowlayout as I'm not trying to resize child items
++            id: actionItemsLayout
++            spacing: PlasmaCore.Units.largeSpacing / 2
++            Layout.alignment: Qt.AlignHCenter
++        }
++        Item {
++            Layout.fillHeight: true
++        }
++    }
++}
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/UserDelegate.qml plasma-workspace-5.23.4/sddm-theme/components/UserDelegate.qml
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/UserDelegate.qml	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/UserDelegate.qml	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1,178 @@
++/*
++    SPDX-FileCopyrightText: 2014 David Edmundson <davidedmundson@kde.org>
++    SPDX-FileCopyrightText: 2014 Aleix Pol Gonzalez <aleixpol@blue-systems.com>
++
++    SPDX-License-Identifier: LGPL-2.0-or-later
++*/
++
++import QtQuick 2.8
++import QtQuick.Window 2.15
++import org.kde.plasma.core 2.0 as PlasmaCore
++import org.kde.plasma.components 3.0 as PlasmaComponents3
++
++Item {
++    id: wrapper
++
++    // If we're using software rendering, draw outlines instead of shadows
++    // See https://bugs.kde.org/show_bug.cgi?id=398317
++    readonly property bool softwareRendering: GraphicsInfo.api === GraphicsInfo.Software
++
++    property bool isCurrent: true
++
++    property string name
++    property string userName
++    property string avatarPath
++    property string iconSource
++    property bool needsPassword
++    property var vtNumber
++    property bool constrainText: true
++    property alias nameFontSize: usernameDelegate.font.pointSize
++    property int fontSize: PlasmaCore.Theme.defaultFont.pointSize + 2
++    signal clicked()
++
++    property real faceSize: PlasmaCore.Units.gridUnit * 7
++
++    opacity: isCurrent ? 1.0 : 0.5
++
++    Behavior on opacity {
++        OpacityAnimator {
++            duration: PlasmaCore.Units.longDuration
++        }
++    }
++
++    // Draw a translucent background circle under the user picture
++    Rectangle {
++        anchors.centerIn: imageSource
++        width: imageSource.width - 2 // Subtract to prevent fringing
++        height: width
++        radius: width / 2
++
++        color: PlasmaCore.ColorScope.backgroundColor
++        opacity: 0.6
++    }
++
++    Item {
++        id: imageSource
++        anchors {
++            bottom: usernameDelegate.top
++            bottomMargin: PlasmaCore.Units.largeSpacing
++            horizontalCenter: parent.horizontalCenter
++        }
++        Behavior on width { 
++            PropertyAnimation {
++                from: faceSize
++                duration: PlasmaCore.Units.longDuration;
++            }
++        }
++        width: isCurrent ? faceSize : faceSize - PlasmaCore.Units.largeSpacing
++        height: width
++
++        //Image takes priority, taking a full path to a file, if that doesn't exist we show an icon
++        Image {
++            id: face
++            source: wrapper.avatarPath
++            sourceSize: Qt.size(faceSize * Screen.devicePixelRatio, faceSize * Screen.devicePixelRatio)
++            fillMode: Image.PreserveAspectCrop
++            anchors.fill: parent
++        }
++
++        PlasmaCore.IconItem {
++            id: faceIcon
++            source: iconSource
++            visible: (face.status == Image.Error || face.status == Image.Null)
++            anchors.fill: parent
++            anchors.margins: PlasmaCore.Units.gridUnit * 0.5 // because mockup says so...
++            colorGroup: PlasmaCore.ColorScope.colorGroup
++        }
++    }
++
++    ShaderEffect {
++        anchors {
++            bottom: usernameDelegate.top
++            bottomMargin: PlasmaCore.Units.largeSpacing
++            horizontalCenter: parent.horizontalCenter
++        }
++
++        width: imageSource.width
++        height: imageSource.height
++
++        supportsAtlasTextures: true
++
++        property var source: ShaderEffectSource {
++            sourceItem: imageSource
++            // software rendering is just a fallback so we can accept not having a rounded avatar here
++            hideSource: wrapper.GraphicsInfo.api !== GraphicsInfo.Software
++            live: true // otherwise the user in focus will show a blurred avatar
++        }
++
++        property var colorBorder: PlasmaCore.ColorScope.textColor
++
++        //draw a circle with an antialiased border
++        //innerRadius = size of the inner circle with contents
++        //outerRadius = size of the border
++        //blend = area to blend between two colours
++        //all sizes are normalised so 0.5 == half the width of the texture
++
++        //if copying into another project don't forget to connect themeChanged to update()
++        //but in SDDM that's a bit pointless
++        fragmentShader: "
++                        varying highp vec2 qt_TexCoord0;
++                        uniform highp float qt_Opacity;
++                        uniform lowp sampler2D source;
++
++                        uniform lowp vec4 colorBorder;
++                        highp float blend = 0.01;
++                        highp float innerRadius = 0.47;
++                        highp float outerRadius = 0.49;
++                        lowp vec4 colorEmpty = vec4(0.0, 0.0, 0.0, 0.0);
++
++                        void main() {
++                            lowp vec4 colorSource = texture2D(source, qt_TexCoord0.st);
++
++                            highp vec2 m = qt_TexCoord0 - vec2(0.5, 0.5);
++                            highp float dist = sqrt(m.x * m.x + m.y * m.y);
++
++                            if (dist < innerRadius)
++                                gl_FragColor = colorSource;
++                            else if (dist < innerRadius + blend)
++                                gl_FragColor = mix(colorSource, colorBorder, ((dist - innerRadius) / blend));
++                            else if (dist < outerRadius)
++                                gl_FragColor = colorBorder;
++                            else if (dist < outerRadius + blend)
++                                gl_FragColor = mix(colorBorder, colorEmpty, ((dist - outerRadius) / blend));
++                            else
++                                gl_FragColor = colorEmpty ;
++
++                            gl_FragColor = gl_FragColor * qt_Opacity;
++                    }
++        "
++    }
++
++    PlasmaComponents3.Label {
++        id: usernameDelegate
++        font.pointSize: wrapper.fontSize
++        anchors {
++            bottom: parent.bottom
++            horizontalCenter: parent.horizontalCenter
++        }
++        width: constrainText ? parent.width : implicitWidth
++        text: wrapper.name
++        style: softwareRendering ? Text.Outline : Text.Normal
++        styleColor: softwareRendering ? PlasmaCore.ColorScope.backgroundColor : "transparent" //no outline, doesn't matter
++        elide: Text.ElideRight
++        horizontalAlignment: Text.AlignHCenter
++        //make an indication that this has active focus, this only happens when reached with keyboard navigation
++        font.underline: wrapper.activeFocus
++    }
++
++    MouseArea {
++        anchors.fill: parent
++        hoverEnabled: true
++
++        onClicked: wrapper.clicked();
++    }
++
++    Accessible.name: name
++    Accessible.role: Accessible.Button
++    function accessiblePressAction() { wrapper.clicked() }
++}
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/UserList.qml plasma-workspace-5.23.4/sddm-theme/components/UserList.qml
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/UserList.qml	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/UserList.qml	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1,88 @@
++/*
++    SPDX-FileCopyrightText: 2014 David Edmundson <davidedmundson@kde.org>
++
++    SPDX-License-Identifier: LGPL-2.0-or-later
++*/
++
++import QtQuick 2.2
++import org.kde.plasma.core 2.0 as PlasmaCore
++
++ListView {
++    id: view
++    readonly property string selectedUser: currentItem ? currentItem.userName : ""
++    readonly property int userItemWidth: PlasmaCore.Units.gridUnit * 8
++    readonly property int userItemHeight: PlasmaCore.Units.gridUnit * 8
++    property int fontSize: PlasmaCore.Theme.defaultFont.pointSize + 2
++
++    implicitHeight: userItemHeight
++
++    activeFocusOnTab : true
++
++    /*
++     * Signals that a user was explicitly selected
++     */
++    signal userSelected;
++
++    orientation: ListView.Horizontal
++    highlightRangeMode: ListView.StrictlyEnforceRange
++
++    //centre align selected item (which implicitly centre aligns the rest
++    preferredHighlightBegin: width/2 - userItemWidth/2
++    preferredHighlightEnd: preferredHighlightBegin
++
++    // Disable flicking if we only have on user (like on the lockscreen)
++    interactive: count > 1
++
++    delegate: UserDelegate {
++        avatarPath: model.icon || ""
++        iconSource: model.iconName || "user-identity"
++        fontSize: view.fontSize
++        vtNumber: model.vtNumber
++        needsPassword: model.needsPassword
++
++        name: {
++            var displayName = model.realName || model.name
++
++            if (model.vtNumber === undefined || model.vtNumber < 0) {
++                return displayName
++            }
++
++            if (!model.session) {
++                return i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "Nobody logged in on that session", "Unused")
++            }
++
++
++            var location = ""
++            if (model.isTty) {
++                location = i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "User logged in on console number", "TTY %1", model.vtNumber)
++            } else if (model.displayNumber) {
++                location = i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "User logged in on console (X display number)", "on TTY %1 (Display %2)", model.vtNumber, model.displayNumber)
++            }
++
++            if (location) {
++                return i18ndc("plasma_lookandfeel_org.kde.lookandfeel", "Username (location)", "%1 (%2)", displayName, location)
++            }
++
++            return displayName
++        }
++
++        userName: model.name
++
++        width: userItemWidth
++        height: userItemHeight
++
++        //if we only have one delegate, we don't need to clip the text as it won't be overlapping with anything
++        constrainText: ListView.view.count > 1
++
++        isCurrent: ListView.isCurrentItem
++
++        onClicked: {
++            ListView.view.currentIndex = index;
++            ListView.view.userSelected();
++        }
++    }
++
++    Keys.onEscapePressed: view.userSelected()
++    Keys.onEnterPressed: view.userSelected()
++    Keys.onReturnPressed: view.userSelected()
++}
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/VirtualKeyboard.qml plasma-workspace-5.23.4/sddm-theme/components/VirtualKeyboard.qml
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/VirtualKeyboard.qml	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/VirtualKeyboard.qml	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1,70 @@
++/*
++    SPDX-FileCopyrightText: 2017 Martin Gräßlin <mgraesslin@kde.org>
++
++    SPDX-License-Identifier: GPL-2.0-or-later
++*/
++
++import QtQuick 2.5
++import QtQuick.VirtualKeyboard 2.1
++import org.kde.plasma.core 2.0 as PlasmaCore
++
++InputPanel {
++    id: inputPanel
++    property bool activated: false
++    active: activated && Qt.inputMethod.visible
++    width: parent.width
++
++    states: [
++        State {
++            name: "visible"
++            when: inputPanel.active
++            PropertyChanges {
++                target: inputPanel
++                y: inputPanel.parent.height - inputPanel.height
++                opacity: 1
++                visible: true
++            }
++        },
++        State {
++            name: "hidden"
++            when: !inputPanel.active
++            PropertyChanges {
++                target: inputPanel
++                y: inputPanel.parent.height
++                opacity: 0
++                visible:false
++            }
++        }
++    ]
++
++    transitions: [
++        Transition {
++            to: "visible"
++            ParallelAnimation {
++                YAnimator {
++                    // NOTE this is necessary as otherwise the keyboard always starts the transition with Y as 0, due to the internal reparenting happening when becomes active
++                    from: inputPanel.parent.height
++                    duration: PlasmaCore.Units.longDuration
++                    easing.type: Easing.OutQuad
++                }
++                OpacityAnimator {
++                    duration: PlasmaCore.Units.longDuration
++                    easing.type: Easing.OutQuad
++                }
++            }
++        },
++        Transition {
++            to: "hidden"
++            ParallelAnimation {
++                YAnimator {
++                    duration: PlasmaCore.Units.longDuration
++                    easing.type: Easing.InQuad
++                }
++                OpacityAnimator {
++                    duration: PlasmaCore.Units.longDuration
++                    easing.type: Easing.InQuad
++                }
++            }
++        }
++    ]
++}
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/VirtualKeyboard_wayland.qml plasma-workspace-5.23.4/sddm-theme/components/VirtualKeyboard_wayland.qml
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/VirtualKeyboard_wayland.qml	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/VirtualKeyboard_wayland.qml	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1,24 @@
++/*
++    SPDX-FileCopyrightText: 2021 Aleix Pol Gonzalez <aleixpol@kde.org>
++
++    SPDX-License-Identifier: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
++*/
++
++import QtQuick 2.15
++import org.kde.plasma.workspace.keyboardlayout 1.0 as Keyboards
++
++Item {
++    id: inputPanel
++    readonly property bool active: Qt.inputMethod.visible
++    property bool activated: false
++    visible: Qt.inputMethod.visible
++
++    x: Qt.inputMethod.keyboardRectangle.x
++    y: Qt.inputMethod.keyboardRectangle.y
++    height: Qt.inputMethod.keyboardRectangle.height
++    width: Qt.inputMethod.keyboardRectangle.width
++
++    onActivatedChanged: if (activated) {
++        Keyboards.KWinVirtualKeyboard.enabled = true
++    }
++}
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user plasma-workspace-5.23.4.orig/sddm-theme/components/WallpaperFader.qml plasma-workspace-5.23.4/sddm-theme/components/WallpaperFader.qml
+--- plasma-workspace-5.23.4.orig/sddm-theme/components/WallpaperFader.qml	1970-01-01 01:00:00.000000000 +0100
++++ plasma-workspace-5.23.4/sddm-theme/components/WallpaperFader.qml	2021-11-30 14:16:17.000000000 +0100
+@@ -0,0 +1,162 @@
++/*
++    SPDX-FileCopyrightText: 2014 Aleix Pol Gonzalez <aleixpol@blue-systems.com>
++
++    SPDX-License-Identifier: GPL-2.0-or-later
++*/
++
++import QtQuick 2.6
++import QtQuick.Controls 1.1
++import QtQuick.Layouts 1.1
++import QtGraphicalEffects 1.0
++
++import org.kde.plasma.core 2.0 as PlasmaCore
++
++import org.kde.plasma.private.sessions 2.0
++import "../components"
++
++Item {
++    id: wallpaperFader
++    property Item clock
++    property Item mainStack
++    property Item footer
++    property alias source: wallpaperBlur.source
++    state: lockScreenRoot.uiVisible ? "on" : "off"
++    property real factor: 0
++    readonly property bool lightBackground: Math.max(PlasmaCore.ColorScope.backgroundColor.r, PlasmaCore.ColorScope.backgroundColor.g, PlasmaCore.ColorScope.backgroundColor.b) > 0.5
++
++    property bool alwaysShowClock: typeof config === "undefined" || typeof config.alwaysShowClock === "undefined" || config.alwaysShowClock === true
++
++    Behavior on factor {
++        NumberAnimation {
++            target: wallpaperFader
++            property: "factor"
++            duration: PlasmaCore.Units.veryLongDuration * 2
++            easing.type: Easing.InOutQuad
++        }
++    }
++    FastBlur {
++        id: wallpaperBlur
++        anchors.fill: parent
++        radius: 50 * wallpaperFader.factor
++    }
++    ShaderEffect {
++        id: wallpaperShader
++        anchors.fill: parent
++        supportsAtlasTextures: true
++        property var source: ShaderEffectSource {
++            sourceItem: wallpaperBlur
++            live: true
++            hideSource: true
++            textureMirroring: ShaderEffectSource.NoMirroring
++        }
++
++        readonly property real contrast: 0.65 * wallpaperFader.factor + (1 - wallpaperFader.factor)
++        readonly property real saturation: 1.6 * wallpaperFader.factor + (1 - wallpaperFader.factor)
++        readonly property real intensity: (wallpaperFader.lightBackground ? 1.7 : 0.6) * wallpaperFader.factor + (1 - wallpaperFader.factor)
++
++        readonly property real transl: (1.0 - contrast) / 2.0;
++        readonly property real rval: (1.0 - saturation) * 0.2126;
++        readonly property real gval: (1.0 - saturation) * 0.7152;
++        readonly property real bval: (1.0 - saturation) * 0.0722;
++
++        property var colorMatrix: Qt.matrix4x4(
++            contrast, 0,        0,        0.0,
++            0,        contrast, 0,        0.0,
++            0,        0,        contrast, 0.0,
++            transl,   transl,   transl,   1.0).times(Qt.matrix4x4(
++                rval + saturation, rval,     rval,     0.0,
++                gval,     gval + saturation, gval,     0.0,
++                bval,     bval,     bval + saturation, 0.0,
++                0,        0,        0,        1.0)).times(Qt.matrix4x4(
++                    intensity, 0,         0,         0,
++                    0,         intensity, 0,         0,
++                    0,         0,         intensity, 0,
++                    0,         0,         0,         1
++                ));
++    
++
++        fragmentShader: "
++            uniform mediump mat4 colorMatrix;
++            uniform mediump sampler2D source;
++            varying mediump vec2 qt_TexCoord0;
++            uniform lowp float qt_Opacity;
++
++            void main(void)
++            {
++                mediump vec4 tex = texture2D(source, qt_TexCoord0);
++                gl_FragColor = tex * colorMatrix * qt_Opacity;
++            }"
++    }
++
++    states: [
++        State {
++            name: "on"
++            PropertyChanges {
++                target: mainStack
++                opacity: 1
++            }
++            PropertyChanges {
++                target: footer
++                opacity: 1
++            }
++            PropertyChanges {
++                target: wallpaperFader
++                factor: 1
++            }
++            PropertyChanges {
++                target: clock.shadow
++                opacity: 0
++            }
++            PropertyChanges {
++                target: clock
++                opacity: 1
++            }
++        },
++        State {
++            name: "off"
++            PropertyChanges {
++                target: mainStack
++                opacity: 0
++            }
++            PropertyChanges {
++                target: footer
++                opacity: 0
++            }
++            PropertyChanges {
++                target: wallpaperFader
++                factor: 0
++            }
++            PropertyChanges {
++                target: clock.shadow
++                opacity: wallpaperFader.alwaysShowClock ? 1 : 0
++            }
++            PropertyChanges {
++                target: clock
++                opacity: wallpaperFader.alwaysShowClock ? 1 : 0
++            }
++        }
++    ]
++    transitions: [
++        Transition {
++            from: "off"
++            to: "on"
++            //Note: can't use animators as they don't play well with parallelanimations
++            NumberAnimation {
++                targets: [mainStack, footer, clock]
++                property: "opacity"
++                duration: PlasmaCore.Units.veryLongDuration
++                easing.type: Easing.InOutQuad
++            }
++        },
++        Transition {
++            from: "on"
++            to: "off"
++            NumberAnimation {
++                targets: [mainStack, footer, clock]
++                property: "opacity"
++                duration: PlasmaCore.Units.veryLongDuration
++                easing.type: Easing.InOutQuad
++            }
++        }
++    ]
++}

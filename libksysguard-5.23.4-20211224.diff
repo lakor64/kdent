@@ -1,0 +1,1526 @@
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/autotests/CMakeLists.txt libksysguard-5.23.4/autotests/CMakeLists.txt
+--- libksysguard-5.23.4.orig/autotests/CMakeLists.txt	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/autotests/CMakeLists.txt	2021-12-16 03:02:11.139166400 +0100
+@@ -28,14 +28,17 @@
+ 
+ ecm_add_test(chronotest.cpp
+     TEST_NAME chronotest
+-    LINK_LIBRARIES Qt::Test KF5::I18n
++    LINK_LIBRARIES Qt::Test KF5::I18n KSysGuard::ProcessUi
+ )
+ 
+ ecm_add_test(formattertest.cpp LINK_LIBRARIES Qt::Test KSysGuard::Formatter)
+ ecm_add_test(sensortreemodeltest.cpp LINK_LIBRARIES Qt::Test Qt::DBus KSysGuard::Sensors)
+ ecm_add_test(sensordatamodeltest.cpp LINK_LIBRARIES Qt::Test Qt::DBus KSysGuard::Sensors KSysGuard::Formatter)
+ ecm_add_test(processdatamodeltest.cpp LINK_LIBRARIES Qt::Test KSysGuard::ProcessCore)
+-ecm_add_test(cgrouptest.cpp LINK_LIBRARIES Qt::Test KF5::Service KSysGuard::ProcessCore)
++
++if (NOT WIN32)
++    ecm_add_test(cgrouptest.cpp LINK_LIBRARIES Qt::Test KF5::Service KSysGuard::ProcessCore)
++endif()
+ 
+ include_directories(../faces)
+ ecm_add_test(sensorfacecontrollertest.cpp LINK_LIBRARIES
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/formatter/Formatter.cpp libksysguard-5.23.4/formatter/Formatter.cpp
+--- libksysguard-5.23.4.orig/formatter/Formatter.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/formatter/Formatter.cpp	2021-12-15 23:19:08.007325800 +0100
+@@ -24,7 +24,9 @@
+ #include <ctime>
+ #endif
+ 
++#ifndef Q_OS_WIN
+ #include <unistd.h>
++#endif
+ 
+ #include "formatter_debug.h"
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/ksgrd/CMakeLists.txt libksysguard-5.23.4/ksgrd/CMakeLists.txt
+--- libksysguard-5.23.4.orig/ksgrd/CMakeLists.txt	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/ksgrd/CMakeLists.txt	2021-12-16 03:49:59.858861800 +0100
+@@ -24,6 +24,8 @@
+         "$<INSTALL_INTERFACE:${KDE_INSTALL_INCLUDEDIR}/ksysguard/>"
+ )
+ 
++generate_export_header(ksgrd)
++
+ target_link_libraries(ksgrd
+     PUBLIC
+         Qt::Core
+@@ -48,9 +50,7 @@
+     SensorManager.h
+     SensorShellAgent.h
+     SensorSocketAgent.h
++    ${CMAKE_CURRENT_BINARY_DIR}/ksgrid_export.h
+     DESTINATION ${KDE_INSTALL_INCLUDEDIR}/ksysguard/ksgrd
+     COMPONENT Devel
+ )
+-
+-
+-
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/ksgrd/SensorAgent.h libksysguard-5.23.4/ksgrd/SensorAgent.h
+--- libksysguard-5.23.4.orig/ksgrd/SensorAgent.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/ksgrd/SensorAgent.h	2021-12-16 03:54:41.169575900 +0100
+@@ -15,6 +15,8 @@
+ #include <QQueue>
+ #include <QSet>
+ 
++#include "ksgrd_export.h"
++
+ class QString;
+ 
+ namespace KSGRD
+@@ -31,7 +33,7 @@
+   ksysguardd. The current implementation only allows one pending
+   requests. Incoming requests are queued in an input FIFO.
+ */
+-class Q_DECL_EXPORT SensorAgent : public QObject
++class KSGRD_EXPORT SensorAgent : public QObject
+ {
+     Q_OBJECT
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/ksgrd/SensorManager.h libksysguard-5.23.4/ksgrd/SensorManager.h
+--- libksysguard-5.23.4.orig/ksgrd/SensorManager.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/ksgrd/SensorManager.h	2021-12-16 03:54:55.734213900 +0100
+@@ -30,14 +30,14 @@
+   SensorAgents. Use engage() to establish a connection and
+   disengage() to terminate the connection.
+  */
+-class Q_DECL_EXPORT SensorManager : public QObject
++class KSGRD_EXPORT SensorManager : public QObject
+ {
+     Q_OBJECT
+ 
+     friend class SensorManagerIterator;
+ 
+ public:
+-    class Q_DECL_EXPORT MessageEvent : public QEvent
++    class KSGRD_EXPORT MessageEvent : public QEvent
+     {
+     public:
+         MessageEvent(const QString &message);
+@@ -110,9 +110,9 @@
+     QPointer<QObject> mBroadcaster;
+ };
+ 
+-Q_DECL_EXPORT extern SensorManager *SensorMgr;
++KSGRD_EXPORT extern SensorManager *SensorMgr;
+ 
+-class Q_DECL_EXPORT SensorManagerIterator : public QHashIterator<QString, SensorAgent *>
++class KSGRD_EXPORT SensorManagerIterator : public QHashIterator<QString, SensorAgent *>
+ {
+ public:
+     explicit SensorManagerIterator(const SensorManager *sm)
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/lsofui/CMakeLists.txt libksysguard-5.23.4/lsofui/CMakeLists.txt
+--- libksysguard-5.23.4.orig/lsofui/CMakeLists.txt	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/lsofui/CMakeLists.txt	2021-12-16 01:36:31.471428600 +0100
+@@ -12,6 +12,14 @@
+ add_library(lsofui ${lsofui_LIB_SRCS})
+ add_library(KSysGuard::LsofUi ALIAS lsofui)
+ 
++target_include_directories(lsofui # required for _export.h
++    PUBLIC
++        "$<BUILD_INTERFACE:${libksysguard_SOURCE_DIR}>"
++        "$<INSTALL_INTERFACE:${KDE_INSTALL_INCLUDEDIR}/ksysguard>"
++)
++
++generate_export_header(lsofui)
++
+ target_link_libraries(lsofui
+     PUBLIC
+         Qt::Widgets
+@@ -32,3 +40,9 @@
+ if(BUILD_DESIGNERPLUGIN)
+     add_subdirectory(designer)
+ endif()
++
++install(FILES
++    ${formatter_HDRS}
++    ${CMAKE_CURRENT_BINARY_DIR}/lsofui_export.h
++    DESTINATION ${KDE_INSTALL_INCLUDEDIR}/ksysguard
++)
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/lsofui/lsof.h libksysguard-5.23.4/lsofui/lsof.h
+--- libksysguard-5.23.4.orig/lsofui/lsof.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/lsofui/lsof.h	2021-12-16 02:17:35.398281200 +0100
+@@ -11,9 +11,11 @@
+ #include <QProcess>
+ #include <QTreeWidget>
+ 
++#include "lsofui_export.h"
++
+ struct KLsofWidgetPrivate;
+ 
+-class Q_DECL_EXPORT KLsofWidget : public QTreeWidget
++class LSOFUI_EXPORT KLsofWidget : public QTreeWidget
+ {
+     Q_OBJECT
+     Q_PROPERTY(qlonglong pid READ pid WRITE setPid)
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/application_data_model.h libksysguard-5.23.4/processcore/application_data_model.h
+--- libksysguard-5.23.4.orig/processcore/application_data_model.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/application_data_model.h	2021-12-16 02:11:19.803902800 +0100
+@@ -10,7 +10,7 @@
+ 
+ namespace KSysGuard
+ {
+-class Q_DECL_EXPORT ApplicationDataModel : public CGroupDataModel
++class PROCESSCORE_EXPORT ApplicationDataModel : public CGroupDataModel
+ {
+     Q_OBJECT
+ public:
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/atop_p.h libksysguard-5.23.4/processcore/atop_p.h
+--- libksysguard-5.23.4.orig/processcore/atop_p.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/atop_p.h	2021-12-16 03:11:05.985603500 +0100
+@@ -24,7 +24,21 @@
+ #define PNAMLEN 15
+ #define CMDLEN 68
+ 
++#ifdef Q_OS_WIN
++struct utsname
++{
++    char* sysname;    /* Windows 10 Professional */
++    char* nodename;   /* PC hostname */
++    char release[10+10+10+10+4];    /* 10.0.19043.1348 */
++    char* version;    /* TODO: can you get the build version of the nt system? */
++    char* machine;    /* Architecture */
++};
++#else
+ #include <sys/utsname.h>
++#endif
++
++#include <KUser>
++
+ #include <time.h>
+ typedef long long count_t;
+ 
+@@ -75,8 +89,8 @@
+     /* GENERAL PROCESS INFO                     */
+     struct gen {
+         int pid; /* process identification   */
+-        int ruid; /* real user  identification    */
+-        int rgid; /* real group identification    */
++        K_UID ruid; /* real user  identification    */
++        K_GID rgid; /* real group identification    */
+         int ppid; /* parent process identification*/
+         int nthr; /* number of threads in tgroup  */
+         char name[PNAMLEN + 1]; /* process name string          */
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/cgroup.h libksysguard-5.23.4/processcore/cgroup.h
+--- libksysguard-5.23.4.orig/processcore/cgroup.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/cgroup.h	2021-12-16 02:11:26.068695600 +0100
+@@ -12,6 +12,8 @@
+ 
+ #include <KService>
+ 
++#include "processcore_export.h"
++
+ namespace KSysGuard
+ {
+ class Process;
+@@ -21,7 +23,7 @@
+  * @brief The CGroup class represents a cgroup. This could be a
+  * service, slice or scope
+  */
+-class Q_DECL_EXPORT CGroup
++class PROCESSCORE_EXPORT CGroup
+ {
+ public:
+     virtual ~CGroup();
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/cgroup_data_model.h libksysguard-5.23.4/processcore/cgroup_data_model.h
+--- libksysguard-5.23.4.orig/processcore/cgroup_data_model.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/cgroup_data_model.h	2021-12-16 02:11:23.951531600 +0100
+@@ -22,7 +22,7 @@
+  *
+  * Data is refreshed on a timer
+  */
+-class Q_DECL_EXPORT CGroupDataModel : public QAbstractItemModel
++class PROCESSCORE_EXPORT CGroupDataModel : public QAbstractItemModel
+ {
+     Q_OBJECT
+     /**
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/CMakeLists.txt libksysguard-5.23.4/processcore/CMakeLists.txt
+--- libksysguard-5.23.4.orig/processcore/CMakeLists.txt	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/CMakeLists.txt	2021-12-16 03:58:30.705367500 +0100
+@@ -3,9 +3,6 @@
+ ########### next target ###############
+ 
+ set(ksysguard_LIB_SRCS
+-   application_data_model.cpp
+-   cgroup.cpp
+-   cgroup_data_model.cpp
+    extended_process_list.cpp
+    processes.cpp
+    process.cpp
+@@ -20,6 +17,11 @@
+    process_data_provider.cpp
+    read_procsmaps_runnable.cpp
+ )
++
++if (NOT WIN32)
++    list(APPEND ksysguard_LIB_SRCS cgroup.cpp cgroup_data_model.cpp application_data_model.cpp)
++endif()
++
+ ecm_qt_declare_logging_category(ksysguard_LIB_SRCS HEADER processcore_debug.h IDENTIFIER LIBKSYSGUARD_PROCESSCORE CATEGORY_NAME org.kde.libksysguard.processcore
+     DESCRIPTION "libksysguard (processcore)" EXPORT LIBKSYSGUARD)
+ 
+@@ -43,10 +45,16 @@
+   target_link_libraries(processcore kvm)
+ endif()
+ 
+-if(NOT HAVE_CLOCK_GETTIME_C)
++if (WIN32)
++    target_link_libraries(processcore PRIVATE Psapi Kernel32)
++endif()
++
++if(NOT HAVE_CLOCK_GETTIME_C AND NOT WIN32)
+     target_link_libraries(processcore PRIVATE rt)
+ endif()
+ 
++generate_export_header(processcore)
++
+ target_include_directories(processcore
+     PUBLIC
+         "$<BUILD_INTERFACE:${libksysguard_SOURCE_DIR}>"
+@@ -78,6 +86,12 @@
+     COMPONENT Devel
+ )
+ 
++install(FILES
++    ${formatter_HDRS}
++    ${CMAKE_CURRENT_BINARY_DIR}/processcore_export.h
++    DESTINATION ${KDE_INSTALL_INCLUDEDIR}/processcore
++)
++
+ #------ KAuth stuff
+ 
+ if(ENABLE_KAUTH_HELPER)
+@@ -85,17 +99,28 @@
+     set(ksysguardprocesslist_helper_srcs
+         helper.cpp
+         process.cpp
++        processes_remote_p.cpp
++        processes.cpp
+         processes_local_p.cpp
+         processes_base_p.cpp
++        processes_atop_p.cpp
+         read_procsmaps_runnable.cpp
++        ${CMAKE_CURRENT_BINARY_DIR}/processcore_debug.cpp
+     )
+-
+     add_executable(ksysguardprocesslist_helper ${ksysguardprocesslist_helper_srcs})
+-    target_link_libraries(ksysguardprocesslist_helper Qt::Core KF5::AuthCore KF5::I18n)
++    target_link_libraries(ksysguardprocesslist_helper Qt::Core KF5::AuthCore KF5::I18n ZLIB::ZLIB)
+     install(TARGETS ksysguardprocesslist_helper DESTINATION ${KAUTH_HELPER_INSTALL_DIR})
+ 
+     kauth_install_helper_files(ksysguardprocesslist_helper org.kde.ksysguard.processlisthelper root)
+     kauth_install_actions(org.kde.ksysguard.processlisthelper actions.actions)
+ 
++    if (NOT MSVC) # MSVC defaults to /W3 which is ok (/W4+ kills Windows.h sorta)
+     set_target_properties(ksysguardprocesslist_helper PROPERTIES COMPILE_FLAGS "-Wall -ggdb")
++    endif()
++
++    if (WIN32)
++        target_link_libraries(ksysguardprocesslist_helper Kernel32 Psapi)
++    endif()
++
++    target_compile_definitions(ksysguardprocesslist_helper PRIVATE processcore_EXPORTS)
+ endif()
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/declarative/ProcessPlugin.cpp libksysguard-5.23.4/processcore/declarative/ProcessPlugin.cpp
+--- libksysguard-5.23.4.orig/processcore/declarative/ProcessPlugin.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/declarative/ProcessPlugin.cpp	2021-12-16 00:27:22.783303700 +0100
+@@ -8,7 +8,10 @@
+ 
+ #include <QQmlEngine>
+ 
++#ifndef Q_OS_WIN // uses cgroup which doesn't exist on windows
+ #include "application_data_model.h"
++#endif
++
+ #include "process_attribute_model.h"
+ #include "process_controller.h"
+ #include "process_data_model.h"
+@@ -31,5 +34,8 @@
+     qmlRegisterUncreatableMetaObject(KSysGuardProcess::staticMetaObject, uri, 1, 0, "Process", QStringLiteral("Contains process enums"));
+     qmlRegisterType<ProcessDataModel>(uri, 1, 0, "ProcessDataModel");
+     qmlRegisterUncreatableType<ProcessAttributeModel>(uri, 1, 0, "ProcessAttributeModel", QStringLiteral("Available through ProcessDataModel"));
++
++#ifndef Q_OS_WIN
+     qmlRegisterType<ApplicationDataModel>(uri, 1, 0, "ApplicationDataModel");
++#endif
+ }
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/extended_process_list.cpp libksysguard-5.23.4/processcore/extended_process_list.cpp
+--- libksysguard-5.23.4.orig/processcore/extended_process_list.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/extended_process_list.cpp	2021-12-16 03:07:09.728861700 +0100
+@@ -17,6 +17,11 @@
+ #include "process_data_provider.h"
+ #include "processcore_debug.h"
+ 
++#ifdef Q_OS_WIN
++#include <Windows.h>
++#include <sddl.h>
++#endif
++
+ using namespace KSysGuard;
+ 
+ class Q_DECL_HIDDEN ExtendedProcesses::Private
+@@ -99,7 +104,7 @@
+     d->m_coreAttributes << loginSensor;
+ 
+     auto uidSensor =
+-        new ProcessSensor<qlonglong>(this, QStringLiteral("uid"), i18n("UID"), &KSysGuard::Process::uid, KSysGuard::Process::Uids, ForwardFirstEntry);
++        new ProcessSensor<P_ID>(this, QStringLiteral("uid"), i18n("UID"), &KSysGuard::Process::uid, KSysGuard::Process::Uids, ForwardFirstEntry);
+     d->m_coreAttributes << uidSensor;
+ 
+     auto userNameSensor = new ProcessSensor<QString>(
+@@ -124,9 +129,28 @@
+         i18n("Can Login"),
+         [this](KSysGuard::Process *p) {
+             const K_UID uid = p->uid();
++#ifdef Q_OS_WIN
++            // uid is a PSID
++
++            // TODO: I belive this is Windows "nobody" (I saw on the internet that appently a null sid login might exist)
++            // perhaps this check could be removed entirely
++
++            PSID sid;
++            if (ConvertStringSidToSidA("S-1-0-0", &sid))
++            {
++                if (EqualSid(reinterpret_cast<PSID>(uid), sid))
++                {
++                    LocalFree(sid);
++                    return false;
++                }
++
++                LocalFree(sid);
++            }
++#else
+             if (uid == 65534) { // special value meaning nobody
+                 return false;
+             }
++#endif
+             auto userIt = d->m_userCache.find(uid);
+             if (userIt == d->m_userCache.end()) {
+                 userIt = d->m_userCache.insert(uid, KUser(uid));
+@@ -148,31 +172,31 @@
+     d->m_coreAttributes << canUserLoginSensor;
+ 
+     auto euidSensor =
+-        new ProcessSensor<qlonglong>(this, QStringLiteral("euid"), i18n("EUID"), &KSysGuard::Process::euid, KSysGuard::Process::Uids, ForwardFirstEntry);
++        new ProcessSensor<P_ID>(this, QStringLiteral("euid"), i18n("EUID"), &KSysGuard::Process::euid, KSysGuard::Process::Uids, ForwardFirstEntry);
+     d->m_coreAttributes << euidSensor;
+ 
+     auto suidSensor =
+-        new ProcessSensor<qlonglong>(this, QStringLiteral("suid"), i18n("suid"), &KSysGuard::Process::suid, KSysGuard::Process::Uids, ForwardFirstEntry);
++        new ProcessSensor<P_ID>(this, QStringLiteral("suid"), i18n("suid"), &KSysGuard::Process::suid, KSysGuard::Process::Uids, ForwardFirstEntry);
+     d->m_coreAttributes << suidSensor;
+ 
+     auto fsuidSensor =
+-        new ProcessSensor<qlonglong>(this, QStringLiteral("fsuid"), i18n("fsuid"), &KSysGuard::Process::fsuid, KSysGuard::Process::Uids, ForwardFirstEntry);
++        new ProcessSensor<P_ID>(this, QStringLiteral("fsuid"), i18n("fsuid"), &KSysGuard::Process::fsuid, KSysGuard::Process::Uids, ForwardFirstEntry);
+     d->m_coreAttributes << fsuidSensor;
+ 
+     auto gidSensor =
+-        new ProcessSensor<qlonglong>(this, QStringLiteral("gid"), i18n("gid"), &KSysGuard::Process::gid, KSysGuard::Process::Gids, ForwardFirstEntry);
++        new ProcessSensor<P_ID>(this, QStringLiteral("gid"), i18n("gid"), &KSysGuard::Process::gid, KSysGuard::Process::Gids, ForwardFirstEntry);
+     d->m_coreAttributes << gidSensor;
+ 
+     auto egidSensor =
+-        new ProcessSensor<qlonglong>(this, QStringLiteral("egid"), i18n("egid"), &KSysGuard::Process::egid, KSysGuard::Process::Gids, ForwardFirstEntry);
++        new ProcessSensor<P_ID>(this, QStringLiteral("egid"), i18n("egid"), &KSysGuard::Process::egid, KSysGuard::Process::Gids, ForwardFirstEntry);
+     d->m_coreAttributes << egidSensor;
+ 
+     auto sgidSensor =
+-        new ProcessSensor<qlonglong>(this, QStringLiteral("sgid"), i18n("sgid"), &KSysGuard::Process::sgid, KSysGuard::Process::Gids, ForwardFirstEntry);
++        new ProcessSensor<P_ID>(this, QStringLiteral("sgid"), i18n("sgid"), &KSysGuard::Process::sgid, KSysGuard::Process::Gids, ForwardFirstEntry);
+     d->m_coreAttributes << sgidSensor;
+ 
+     auto fsgidSensor =
+-        new ProcessSensor<qlonglong>(this, QStringLiteral("fsgid"), i18n("fsgid"), &KSysGuard::Process::fsgid, KSysGuard::Process::Gids, ForwardFirstEntry);
++        new ProcessSensor<P_ID>(this, QStringLiteral("fsgid"), i18n("fsgid"), &KSysGuard::Process::fsgid, KSysGuard::Process::Gids, ForwardFirstEntry);
+     d->m_coreAttributes << fsgidSensor;
+ 
+     auto tracerpidSensor = new ProcessSensor<qlonglong>(this,
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/extended_process_list.h libksysguard-5.23.4/processcore/extended_process_list.h
+--- libksysguard-5.23.4.orig/processcore/extended_process_list.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/extended_process_list.h	2021-12-16 02:11:28.526568600 +0100
+@@ -14,7 +14,7 @@
+ {
+ class ProcessAttribute;
+ 
+-class Q_DECL_EXPORT ExtendedProcesses : public KSysGuard::Processes
++class PROCESSCORE_EXPORT ExtendedProcesses : public KSysGuard::Processes
+ {
+     Q_OBJECT
+ public:
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/process.cpp libksysguard-5.23.4/processcore/process.cpp
+--- libksysguard-5.23.4.orig/processcore/process.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/process.cpp	2021-12-15 23:46:11.805100800 +0100
+@@ -16,14 +16,14 @@
+     long parent_pid;
+     Process *parent;
+     QString login;
+-    qlonglong uid;
+-    qlonglong euid;
+-    qlonglong suid;
+-    qlonglong fsuid;
+-    qlonglong gid;
+-    qlonglong egid;
+-    qlonglong sgid;
+-    qlonglong fsgid;
++    P_ID uid;
++    P_ID euid;
++    P_ID suid;
++    P_ID fsuid;
++    P_ID gid;
++    P_ID egid;
++    P_ID sgid;
++    P_ID fsgid;
+     qlonglong tracerpid;
+     QByteArray tty;
+     qlonglong userTime;
+@@ -187,10 +187,16 @@
+     d->pid = -1;
+     d->parent_pid = -1;
+     d->parent = nullptr;
++#ifndef Q_OS_WIN
+     d->uid = 0;
+     d->gid = -1;
+     d->suid = d->euid = d->fsuid = -1;
+     d->sgid = d->egid = d->fsgid = -1;
++#else
++    d->uid = d->gid = NULL;
++    d->suid = d->euid = d->fsuid = NULL;
++    d->sgid = d->egid = d->fsgid = NULL;
++#endif
+     d->tracerpid = -1;
+     d->userTime = 0;
+     d->sysTime = 0;
+@@ -253,42 +259,42 @@
+     return d->login;
+ }
+ 
+-qlonglong Process::uid() const
++P_ID Process::uid() const
+ {
+     return d->uid;
+ }
+ 
+-qlonglong Process::euid() const
++P_ID Process::euid() const
+ {
+     return d->euid;
+ }
+ 
+-qlonglong Process::suid() const
++P_ID Process::suid() const
+ {
+     return d->suid;
+ }
+ 
+-qlonglong Process::fsuid() const
++P_ID Process::fsuid() const
+ {
+     return d->fsuid;
+ }
+ 
+-qlonglong Process::gid() const
++P_ID Process::gid() const
+ {
+     return d->gid;
+ }
+ 
+-qlonglong Process::egid() const
++P_ID Process::egid() const
+ {
+     return d->egid;
+ }
+ 
+-qlonglong Process::sgid() const
++P_ID Process::sgid() const
+ {
+     return d->sgid;
+ }
+ 
+-qlonglong Process::fsgid() const
++P_ID Process::fsgid() const
+ {
+     return d->fsgid;
+ }
+@@ -551,7 +557,7 @@
+     d->changes |= Process::Login;
+ }
+ 
+-void Process::setUid(qlonglong uid)
++void Process::setUid(P_ID uid)
+ {
+     if (d->uid == uid)
+         return;
+@@ -559,7 +565,7 @@
+     d->changes |= Process::Uids;
+ }
+ 
+-void Process::setEuid(qlonglong euid)
++void Process::setEuid(P_ID euid)
+ {
+     if (d->euid == euid)
+         return;
+@@ -567,7 +573,7 @@
+     d->changes |= Process::Uids;
+ }
+ 
+-void Process::setSuid(qlonglong suid)
++void Process::setSuid(P_ID suid)
+ {
+     if (d->suid == suid)
+         return;
+@@ -575,7 +581,7 @@
+     d->changes |= Process::Uids;
+ }
+ 
+-void Process::setFsuid(qlonglong fsuid)
++void Process::setFsuid(P_ID fsuid)
+ {
+     if (d->fsuid == fsuid)
+         return;
+@@ -583,7 +589,7 @@
+     d->changes |= Process::Uids;
+ }
+ 
+-void Process::setGid(qlonglong gid)
++void Process::setGid(P_ID gid)
+ {
+     if (d->gid == gid)
+         return;
+@@ -591,7 +597,7 @@
+     d->changes |= Process::Gids;
+ }
+ 
+-void Process::setEgid(qlonglong egid)
++void Process::setEgid(P_ID egid)
+ {
+     if (d->egid == egid)
+         return;
+@@ -599,7 +605,7 @@
+     d->changes |= Process::Gids;
+ }
+ 
+-void Process::setSgid(qlonglong sgid)
++void Process::setSgid(P_ID sgid)
+ {
+     if (d->sgid == sgid)
+         return;
+@@ -607,7 +613,7 @@
+     d->changes |= Process::Gids;
+ }
+ 
+-void Process::setFsgid(qlonglong fsgid)
++void Process::setFsgid(P_ID fsgid)
+ {
+     if (d->fsgid == fsgid)
+         return;
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/process.h libksysguard-5.23.4/processcore/process.h
+--- libksysguard-5.23.4.orig/processcore/process.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/process.h	2021-12-16 02:11:43.396780600 +0100
+@@ -14,11 +14,19 @@
+ #include <QTime>
+ #include <QVariant>
+ 
++#include "processcore_export.h"
++
++#ifdef Q_OS_WIN
++typedef void* P_ID;
++#else
++typedef qlonglong P_ID;
++#endif
++
+ namespace KSysGuard
+ {
+ class ProcessPrivate; // forward decl d-ptr
+ 
+-class Q_DECL_EXPORT Process
++class PROCESSCORE_EXPORT Process
+ {
+ public:
+     enum ProcessStatus { Running, Sleeping, DiskSleep, Zombie, Stopped, Paging, Ended, OtherStatus = 99 };
+@@ -51,29 +59,29 @@
+     QString login() const;
+     void setLogin(const QString &login); ///< The user login name.  Only used for processes on remote machines.  Otherwise use uid to get the name
+ 
+-    qlonglong uid() const;
+-    void setUid(qlonglong uid); ///< The user id that the process is running as
++    P_ID uid() const;
++    void setUid(P_ID uid); ///< The user id that the process is running as
+ 
+-    qlonglong euid() const;
+-    void setEuid(qlonglong euid); ///< The effective user id that the process is running as
++    P_ID euid() const;
++    void setEuid(P_ID euid); ///< The effective user id that the process is running as
+ 
+-    qlonglong suid() const;
+-    void setSuid(qlonglong suid); ///< The set user id that the process is running as
++    P_ID suid() const;
++    void setSuid(P_ID suid); ///< The set user id that the process is running as
+ 
+-    qlonglong fsuid() const;
+-    void setFsuid(qlonglong fsuid); ///< The file system user id that the process is running as.
++    P_ID fsuid() const;
++    void setFsuid(P_ID fsuid); ///< The file system user id that the process is running as.
+ 
+-    qlonglong gid() const;
+-    void setGid(qlonglong gid); ///< The process group id that the process is running as
++    P_ID gid() const;
++    void setGid(P_ID gid); ///< The process group id that the process is running as
+ 
+-    qlonglong egid() const;
+-    void setEgid(qlonglong egid); ///< The effective group id that the process is running as
++    P_ID egid() const;
++    void setEgid(P_ID egid); ///< The effective group id that the process is running as
+ 
+-    qlonglong sgid() const;
+-    void setSgid(qlonglong sgid); ///< The set group id that the process is running as
++    P_ID sgid() const;
++    void setSgid(P_ID sgid); ///< The set group id that the process is running as
+ 
+-    qlonglong fsgid() const;
+-    void setFsgid(qlonglong fsgid); ///< The file system group id that the process is running as
++    P_ID fsgid() const;
++    void setFsgid(P_ID fsgid); ///< The file system group id that the process is running as
+ 
+     qlonglong tracerpid() const;
+     void setTracerpid(qlonglong tracerpid); ///< If this is being debugged, this is the process that is debugging it, or 0 otherwise
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/process_attribute.cpp libksysguard-5.23.4/processcore/process_attribute.cpp
+--- libksysguard-5.23.4.orig/processcore/process_attribute.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/process_attribute.cpp	2021-12-16 00:25:43.024497700 +0100
+@@ -5,7 +5,11 @@
+ */
+ 
+ #include "process_attribute.h"
++
++#ifndef Q_OS_WIN
+ #include "cgroup.h"
++#endif
++
+ #include "processes.h"
+ 
+ #include <QMetaMethod>
+@@ -156,6 +160,7 @@
+     emit dataChanged(process);
+ }
+ 
++#ifndef Q_OS_WIN
+ QVariant ProcessAttribute::cgroupData(KSysGuard::CGroup *cgroup, const QVector<KSysGuard::Process *> &groupProcesses) const
+ {
+     Q_UNUSED(cgroup)
+@@ -169,6 +174,7 @@
+     });
+     return QVariant(total);
+ }
++#endif
+ 
+ void ProcessAttribute::connectNotify(const QMetaMethod &signal)
+ {
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/process_attribute.h libksysguard-5.23.4/processcore/process_attribute.h
+--- libksysguard-5.23.4.orig/processcore/process_attribute.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/process_attribute.h	2021-12-16 02:11:33.458383300 +0100
+@@ -16,7 +16,7 @@
+ class Process;
+ class CGroup;
+ 
+-class Q_DECL_EXPORT ProcessAttribute : public QObject
++class PROCESSCORE_EXPORT ProcessAttribute : public QObject
+ {
+     Q_OBJECT
+ public:
+@@ -106,7 +106,9 @@
+      */
+     void clearData(KSysGuard::Process *process);
+ 
++#ifndef Q_OS_WIN
+     virtual QVariant cgroupData(KSysGuard::CGroup *cgroup, const QVector<KSysGuard::Process *> &groupProcesses = {}) const;
++#endif
+ 
+ Q_SIGNALS:
+     void dataChanged(KSysGuard::Process *process);
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/process_attribute_model.h libksysguard-5.23.4/processcore/process_attribute_model.h
+--- libksysguard-5.23.4.orig/processcore/process_attribute_model.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/process_attribute_model.h	2021-12-16 02:11:30.977288600 +0100
+@@ -9,6 +9,8 @@
+ 
+ #include <QAbstractListModel>
+ 
++#include "processcore_export.h"
++
+ namespace KSysGuard
+ {
+ class ExtendedProcesses;
+@@ -18,7 +20,7 @@
+  * Presents a list of available attributes that can be
+  * enabled on a ProceessDataModel
+  */
+-class Q_DECL_EXPORT ProcessAttributeModel : public QAbstractListModel
++class PROCESSCORE_EXPORT ProcessAttributeModel : public QAbstractListModel
+ {
+     Q_OBJECT
+ public:
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/process_controller.h libksysguard-5.23.4/processcore/process_controller.h
+--- libksysguard-5.23.4.orig/processcore/process_controller.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/process_controller.h	2021-12-16 02:11:40.030587500 +0100
+@@ -18,6 +18,17 @@
+ 
+ class QWidget;
+ 
++#ifdef Q_OS_WIN
++#define SIGSTOP 17 // SuspendProcess
++#define SIGCONT 19 // ResumeProcess
++#define SIGHUP 1
++#define SIGINT 2
++#define SIGTERM 15 // SendMessage(WM_CLOSE) 
++#define SIGKILL 9 // TerminateProcess
++#define SIGUSR1 30
++#define SIGUSR2 31
++#endif
++
+ /**
+  * Control processes' priority, scheduling and sending signals.
+  *
+@@ -28,7 +39,7 @@
+  */
+ namespace KSysGuard
+ {
+-class Q_DECL_EXPORT ProcessController : public QObject
++class PROCESSCORE_EXPORT ProcessController : public QObject
+ {
+     Q_OBJECT
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/process_data_model.h libksysguard-5.23.4/processcore/process_data_model.h
+--- libksysguard-5.23.4.orig/processcore/process_data_model.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/process_data_model.h	2021-12-16 02:11:37.223643700 +0100
+@@ -24,7 +24,7 @@
+  * needing to understand the semantics of each column
+  * It is designed to be consumable by a QML API
+  */
+-class Q_DECL_EXPORT ProcessDataModel : public QAbstractItemModel
++class PROCESSCORE_EXPORT ProcessDataModel : public QAbstractItemModel
+ {
+     Q_OBJECT
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/process_data_provider.h libksysguard-5.23.4/processcore/process_data_provider.h
+--- libksysguard-5.23.4.orig/processcore/process_data_provider.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/process_data_provider.h	2021-12-16 02:11:41.802651600 +0100
+@@ -9,6 +9,8 @@
+ #include <QVariant>
+ #include <QVector>
+ 
++#include "processcore_export.h"
++
+ namespace KSysGuard
+ {
+ class Processes;
+@@ -19,7 +21,7 @@
+  * Base class for a process plugin data
+  * Plugins provide a list of additional attributes, which in turn have data about a given process
+  */
+-class Q_DECL_EXPORT ProcessDataProvider : public QObject
++class PROCESSCORE_EXPORT ProcessDataProvider : public QObject
+ {
+     Q_OBJECT
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/processes.cpp libksysguard-5.23.4/processcore/processes.cpp
+--- libksysguard-5.23.4.orig/processcore/processes.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/processes.cpp	2021-12-16 03:38:15.799223900 +0100
+@@ -17,7 +17,9 @@
+ #include <QVariantMap>
+ 
+ // for sysconf
++#ifndef Q_OS_WIN
+ #include <unistd.h>
++#endif
+ 
+ /* if porting to an OS without signal.h  please #define SIGTERM to something */
+ #include <signal.h>
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/processes.h libksysguard-5.23.4/processcore/processes.h
+--- libksysguard-5.23.4.orig/processcore/processes.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/processes.h	2021-12-16 03:45:41.538840800 +0100
+@@ -7,6 +7,7 @@
+ #ifndef PROCESSES_H_
+ #define PROCESSES_H_
+ 
++#include "processcore_export.h"
+ #include "process.h"
+ #include <QHash>
+ #include <QObject>
+@@ -34,11 +35,14 @@
+  *
+  * @author John Tapsell <tapsell@kde.org>
+  */
+-#ifdef Q_WS_WIN
++
++/*#ifdef Q_WS_WIN // NOTE: this was removed as with _export files it doesn't link anymore...
+ class Processes : public QObject
+ #else
+ class Q_DECL_EXPORT Processes : public QObject
+-#endif
++#endif*/
++
++class PROCESSCORE_EXPORT Processes : public QObject
+ {
+     Q_OBJECT
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/processes_atop_p.h libksysguard-5.23.4/processcore/processes_atop_p.h
+--- libksysguard-5.23.4.orig/processcore/processes_atop_p.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/processes_atop_p.h	2021-12-15 23:28:37.097780900 +0100
+@@ -8,7 +8,10 @@
+ #define PROCESSES_ATOP_H_
+ 
+ #include "processes_base_p.h"
++
++#ifndef Q_OS_WIN
+ #include <unistd.h> //For sysconf
++#endif
+ 
+ #include <QSet>
+ class QDateTime;
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/processes_local_p.cpp libksysguard-5.23.4/processcore/processes_local_p.cpp
+--- libksysguard-5.23.4.orig/processcore/processes_local_p.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/processes_local_p.cpp	2021-12-16 03:30:55.793872900 +0100
+@@ -16,6 +16,8 @@
+ #include "processes_netbsd_p.cpp"
+ #elif defined __GNU__ || defined __APPLE__
+ #include "processes_gnu_p.cpp"
++#elif defined _WIN32 || defined __WINDOWS__
++#include "processes_windows_p.cpp"
+ #else
+ // Use Qt's OS detection
+ #include <qglobal.h>
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/processes_local_p.h libksysguard-5.23.4/processcore/processes_local_p.h
+--- libksysguard-5.23.4.orig/processcore/processes_local_p.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/processes_local_p.h	2021-12-15 23:19:33.540419800 +0100
+@@ -8,7 +8,10 @@
+ #define PROCESSES_LOCAL_H_
+ 
+ #include "processes_base_p.h"
++
++#ifndef Q_OS_WIN
+ #include <unistd.h> //For sysconf
++#endif
+ 
+ #include <QSet>
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/processes_remote_p.cpp libksysguard-5.23.4/processcore/processes_remote_p.cpp
+--- libksysguard-5.23.4.orig/processcore/processes_remote_p.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processcore/processes_remote_p.cpp	2021-12-16 03:08:38.803769300 +0100
+@@ -102,10 +102,14 @@
+ 
+     if (d->nameColumn != -1)
+         process->setName(QString::fromUtf8(p.at(d->nameColumn)));
++#ifndef Q_OS_WIN
+     if (d->uidColumn != -1)
+         process->setUid(p.at(d->uidColumn).toLong());
+     if (d->gidColumn != -1)
+         process->setGid(p.at(d->gidColumn).toLong());
++#else
++    // TODO: make a conversion from SID string to SID token (Real username to SIDs)
++#endif
+     if (d->statusColumn != -1) {
+         switch (p.at(d->statusColumn)[0]) {
+         case 's':
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processcore/processes_windows_p.cpp libksysguard-5.23.4/processcore/processes_windows_p.cpp
+--- libksysguard-5.23.4.orig/processcore/processes_windows_p.cpp	1970-01-01 01:00:00.000000000 +0100
++++ libksysguard-5.23.4/processcore/processes_windows_p.cpp	2021-12-16 03:34:05.214049700 +0100
+@@ -0,0 +1,238 @@
++/*
++    SPDX-FileCopyrightText: 
++
++    SPDX-License-Identifier: LGPL-2.0-or-later
++*/
++
++#include "process.h"
++#include "processes_local_p.h"
++#include "processes_atop_p.h"
++
++#include <Windows.h>
++#include <psapi.h>
++#include <tlhelp32.h>
++//#include <winternl.h>
++
++namespace KSysGuard
++{
++
++class ProcessesLocal::Private
++{
++public:
++    Private()
++    {
++        
++    }
++    ~Private()
++    {
++        ;
++    }
++    inline bool readProc(DWORD pid, HANDLE& hProcess);
++    inline void readProcStatus(HANDLE hProcess, Process *process);
++    inline void readProcStat(HANDLE hProcess, Process *process);
++    inline void readProcStatm(HANDLE hProcess, Process *process);
++    inline bool readProcCmdline(HANDLE hProcess, Process *process);
++};
++
++bool ProcessesLocal::Private::readProc(DWORD pid, HANDLE& hProcess)
++{
++    hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SET_INFORMATION, FALSE, pid);
++    return hProcess != NULL;
++}
++
++bool ProcessesLocal::Private::readProcCmdline(HANDLE hProcess, Process *process)
++{
++    /*
++        This would be implemented by getting the current process PEB via NtQueryProcessInformation
++            and getting the process environment information, which from there we can grab the command line
++    */
++    return true;
++}
++
++void ProcessesLocal::Private::readProcStatus(HANDLE hProcess, Process *process)
++{
++    // TODO: investigate if is there any autoconversion for nt tokens somewhere where this info is used
++    //process->setUid(0);
++    //process->setGid(0);
++    //process->setEuid(0);
++    //process->setEgid(0);
++
++    // TODO: Is there a way to implement this? Debugapi.h doesn't expose debugger pid
++    process->setTracerpid(-1); 
++    
++    DWORD dwLen = 0;
++
++    // _WIN32_WINNT >= 0x600
++    if (QueryFullProcessImageNameW(hProcess, 0, nullptr, &dwLen))
++    {
++        std::wstring szProcessName;
++        szProcessName.reserve(dwLen + 1);
++        szProcessName.resize(dwLen);
++        QueryFullProcessImageNameW(hProcess, 0, &szProcessName[0], &dwLen);
++        process->setName(QString::fromStdWString(szProcessName));
++    }
++}
++
++void ProcessesLocal::Private::readProcStat(HANDLE hProcess, Process *process)
++{
++    // Note: hProcess must have access flag PROCESS_QUERY_INFORMATION
++    FILETIME sCreationTime, sExitTime, sKernelTime, sUserTime;
++    
++    if (GetProcessTimes(hProcess, &sCreationTime, &sExitTime, &sKernelTime, &sUserTime))
++    {
++        ULARGE_INTEGER nTime;
++        nTime.u.LowPart = sCreationTime.dwLowDateTime;
++        nTime.u.HighPart = sCreationTime.dwHighDateTime;
++        process->setUserTime(nTime.QuadPart);
++
++        nTime.u.LowPart = sKernelTime.dwLowDateTime;
++        nTime.u.HighPart = sKernelTime.dwHighDateTime;
++        process->setSysTime(nTime.QuadPart);
++
++        nTime.u.LowPart = sCreationTime.dwLowDateTime;
++        nTime.u.HighPart = sCreationTime.dwHighDateTime;
++        process->setStartTime(nTime.QuadPart); // TODO: this is expressed in clock ticks, investigate if this value is correct
++    }
++
++    PROCESS_MEMORY_COUNTERS_EX psmemCounters;
++
++    if (GetProcessMemoryInfo(hProcess, (PROCESS_MEMORY_COUNTERS*) &psmemCounters, sizeof(psmemCounters)))
++    {
++        process->setVmSize(psmemCounters.PrivateUsage / 1024); /* convert to KiB */
++        process->setVmRSS(psmemCounters.WorkingSetSize / 1024); /* convert to KiB */
++    }
++
++    // TODO: Implement Suspended (ProcessStatus::Stopped) state (ReactOS doesn't document that behavour, but modern TaskMngr does)
++    /* NOTE: there is no way (unless you get access to the struct PEPROCESS from a kernel driver)
++        to check when a windows process is a zombie 
++       NOTE2: The only way to implement if an application is hung or not is by enumating all HWNDs of such application, which
++        is pretty much not the entire process, therefore the app should not bother dealing with HWNDs
++        NOTE3: Apperently the only way to see if a process is sleeping is also by getting an internal kernel structure defined
++            when calling SleepEx    
++    */
++    
++    process->setStatus(Process::ProcessStatus::Running);
++}
++
++void ProcessesLocal::Private::readProcStatm(HANDLE hProcess, Process *process)
++{
++    process->setVmURSS(-1);
++}
++
++
++ProcessesLocal::ProcessesLocal()
++    : d(new Private())
++{
++}
++
++Processes::Error ProcessesLocal::setIoNiceness(long pid, int priorityClass, int priority)
++{
++    return Processes::NotSupported;
++}
++
++bool ProcessesLocal::supportsIoNiceness()
++{
++    return false;
++}
++
++long long ProcessesLocal::totalPhysicalMemory()
++{
++    MEMORYSTATUSEX statEx;
++
++    statEx.dwLength = sizeof(statEx);
++
++    if (!GlobalMemoryStatusEx(&statEx))
++        return 0;
++    
++    return statEx.ullTotalPhys /= 1024;
++}
++
++bool ProcessesLocal::updateProcessInfo(long pid, Process *process)
++{
++    HANDLE hProc;
++    if (!d->readProc(pid, hProc))
++        return false;
++    d->readProcStat(hProc, process);
++    d->readProcStatus(hProc, process);
++    d->readProcStatm(hProc, process);
++    if (!d->readProcCmdline(hProc, process))
++        return false;
++
++    return true;
++}
++
++long ProcessesLocal::getParentPid(long pid)
++{
++    return 0; // TODO...
++}
++
++QSet<long> ProcessesLocal::getAllPids()
++{
++    QSet<long> pids;
++
++    /*ULONG spiSize; // NOTE: SystemProcessInformation can be used when we require using ntdll.dll for precise info of processes, fallback to Psapi for now
++    if (!NT_SUCCESS(NtQuerySystemInformation(SystemProcessInformation, NULL, 0, &spiSize)))
++        return pids;*/
++
++#ifndef NTDLL_API // _WIN32_WINNT >= 0x501
++    auto hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
++
++    if (hSnap == INVALID_HANDLE_VALUE)
++        return pids;
++
++    PROCESSENTRY32 sPe = {0};
++    sPe.dwSize = sizeof(sPe);
++    if (!Process32First(hSnap, &sPe))
++    {
++        CloseHandle(hSnap);
++        return pids;    
++    }
++
++    do
++    {
++        pids.insert(long(sPe.th32ProcessID));
++    } while (Process32Next(hSnap, &sPe));
++
++    CloseHandle(hSnap);
++    return pids;
++#endif
++}
++
++Processes::Error ProcessesLocal::setScheduler(long pid, int priorityClass, int priority)
++{
++    // TODO: ?
++    return Processes::Error::NotSupported;
++}
++
++Processes::Error ProcessesLocal::sendSignal(long pid, int sig)
++{
++    /* TODO: would require mapping signals to Nt functions */
++    return Processes::Error::NotSupported;
++}
++
++Processes::Error ProcessesLocal::setNiceness(long pid, int priority)
++{
++    // TODO: Priority class?
++    return Processes::Error::NotSupported;
++}
++
++long int ProcessesLocal::numberProcessorCores()
++{
++    SYSTEM_INFO sSystemInfo;
++    GetSystemInfo(&sSystemInfo);
++    return long(sSystemInfo.dwNumberOfProcessors);
++}
++
++long int ProcessesATop::numberProcessorCores()
++{
++    SYSTEM_INFO sSystemInfo;
++    GetSystemInfo(&sSystemInfo);
++    return long(sSystemInfo.dwNumberOfProcessors);
++}
++
++ProcessesLocal::~ProcessesLocal()
++{
++    delete d;
++}
++
++}
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processui/CMakeLists.txt libksysguard-5.23.4/processui/CMakeLists.txt
+--- libksysguard-5.23.4.orig/processui/CMakeLists.txt	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processui/CMakeLists.txt	2021-12-16 03:52:19.104459500 +0100
+@@ -11,6 +11,7 @@
+    ProcessModel.cpp
+    ReniceDlg.cpp
+    KTextEditVT.cpp
++   timeutil.cpp
+    scripting.cpp
+ )
+ 
+@@ -56,6 +57,8 @@
+         "$<INSTALL_INTERFACE:${KDE_INSTALL_INCLUDEDIR}/ksysguard>"
+ )
+ 
++generate_export_header(processui)
++
+ if(X11_FOUND)
+     target_link_libraries(processui PRIVATE Qt::X11Extras KF5::WindowSystem)
+ endif()
+@@ -64,7 +67,7 @@
+     target_link_libraries(processui PRIVATE Qt::WebEngineWidgets Qt::WebChannel)
+ endif()
+ 
+-if(NOT HAVE_CLOCK_GETTIME_C)
++if(NOT HAVE_CLOCK_GETTIME_C AND NOT WIN32)
+     target_link_libraries(processui PRIVATE rt)
+ endif()
+ 
+@@ -81,6 +84,7 @@
+     ProcessFilter.h
+     KTextEditVT.h
+     ksysguardprocesslist.h
++    ${CMAKE_CURRENT_BINARY_DIR}/processui_export.h
+     DESTINATION ${KDE_INSTALL_INCLUDEDIR}/ksysguard/processui
+     COMPONENT Devel
+ )
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processui/ksysguardprocesslist.cpp libksysguard-5.23.4/processui/ksysguardprocesslist.cpp
+--- libksysguard-5.23.4.orig/processui/ksysguardprocesslist.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processui/ksysguardprocesslist.cpp	2021-12-16 04:01:28.225523000 +0100
+@@ -55,7 +55,10 @@
+ #include "ui_ProcessWidgetUI.h"
+ 
+ #include <sys/types.h>
++
++#ifndef Q_OS_WIN
+ #include <unistd.h>
++#endif
+ 
+ // Trolltech have a testing class for classes that inherit QAbstractItemModel.  If you want to run with this run-time testing enabled, put the modeltest.* files
+ // in this directory and uncomment the next line #define DO_MODELCHECK
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processui/KTextEditVT.h libksysguard-5.23.4/processui/KTextEditVT.h
+--- libksysguard-5.23.4.orig/processui/KTextEditVT.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processui/KTextEditVT.h	2021-12-16 03:52:37.846307000 +0100
+@@ -12,6 +12,8 @@
+ 
+ #include <QTextEdit>
+ 
++#include "processui_export.h"
++
+ /*
+  *    \class KTextEditVT
+  *   \brief The KTextEditVT class provides a widget that is used to edit and display
+@@ -38,7 +40,7 @@
+  *    will insert the text  "Hello" at the current character position.
+  *    (Character 08 is the literal backspace character.  Treated as equivalent to character 127)
+  */
+-class Q_DECL_EXPORT KTextEditVT : public QTextEdit
++class PROCESSUI_EXPORT KTextEditVT : public QTextEdit
+ {
+     Q_OBJECT
+     Q_PROPERTY(bool parseAnsiEscapeCodes READ parseAnsiEscapeCodes WRITE setParseAnsiEscapeCodes)
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processui/ProcessFilter.cpp libksysguard-5.23.4/processui/ProcessFilter.cpp
+--- libksysguard-5.23.4.orig/processui/ProcessFilter.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processui/ProcessFilter.cpp	2021-12-16 03:56:39.491346300 +0100
+@@ -10,7 +10,10 @@
+ 
+ /* For getuid() */
+ #include <sys/types.h>
++
++#ifndef Q_OS_WIN
+ #include <unistd.h>
++#endif
+ 
+ #include <QDebug>
+ #include <QVariant>
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processui/ProcessFilter.h libksysguard-5.23.4/processui/ProcessFilter.h
+--- libksysguard-5.23.4.orig/processui/ProcessFilter.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processui/ProcessFilter.h	2021-12-16 03:53:44.703773800 +0100
+@@ -16,6 +16,7 @@
+ 
+ class QModelIndex;
+ 
++
+ #ifdef Q_OS_WIN
+ // this workaround is needed to make krunner link under msvc
+ // please keep it this way even if you port this library to have a _export.h header file
+@@ -24,6 +25,7 @@
+ #define KSYSGUARD_EXPORT Q_DECL_EXPORT
+ #endif
+ 
++
+ class KSYSGUARD_EXPORT ProcessFilter : public QSortFilterProxyModel
+ {
+     Q_OBJECT
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processui/ProcessModel.cpp libksysguard-5.23.4/processui/ProcessModel.cpp
+--- libksysguard-5.23.4.orig/processui/ProcessModel.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processui/ProcessModel.cpp	2021-12-16 04:02:29.737031000 +0100
+@@ -42,9 +42,13 @@
+ #ifdef GET_OWN_ID
+ /* For getuid*/
+ #include <sys/types.h>
++
++#ifndef Q_OS_WIN
+ #include <unistd.h>
+ #endif
+ 
++#endif
++
+ #ifdef HAVE_XRES
+ #include <X11/extensions/XRes.h>
+ #endif
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processui/scripting.h libksysguard-5.23.4/processui/scripting.h
+--- libksysguard-5.23.4.orig/processui/scripting.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processui/scripting.h	2021-12-16 04:02:46.530924800 +0100
+@@ -91,16 +91,16 @@
+        P_PROPERTY(qlonglong rss READ vmRSS)                            /* Map 'rss' to 'vmRSS' just to give it a nicer scripting name */
+        P_PROPERTY(qlonglong urss READ vmURSS)                          /* Map 'urss' to 'vmURSS' just to give it a nicer scripting name */
+        P_PROPERTY(int numThreads READ numThreads)                      PROPERTY(int, numThreads)
+-       P_PROPERTY(qlonglong fsgid READ fsgid)                          PROPERTY(qlonglong, fsgid)
++       P_PROPERTY(P_ID fsgid READ fsgid)                               PROPERTY(P_ID, fsgid)
+        P_PROPERTY(qlonglong parentPid READ parentPid)                  PROPERTY(qlonglong, parentPid)
+        P_PROPERTY(QString login READ login)                            PROPERTY(QString, login)
+-       P_PROPERTY(qlonglong uid READ uid)                              PROPERTY(qlonglong, uid)
+-       P_PROPERTY(qlonglong euid READ euid)                            PROPERTY(qlonglong, euid)
+-       P_PROPERTY(qlonglong suid READ suid)                            PROPERTY(qlonglong, suid)
+-       P_PROPERTY(qlonglong fsuid READ fsuid)                          PROPERTY(qlonglong, fsuid)
+-       P_PROPERTY(qlonglong gid READ gid)                              PROPERTY(qlonglong, gid)
+-       P_PROPERTY(qlonglong egid READ egid)                            PROPERTY(qlonglong, egid)
+-       P_PROPERTY(qlonglong sgid READ sgid)                            PROPERTY(qlonglong, sgid)
++       P_PROPERTY(P_ID uid READ uid)                                   PROPERTY(P_ID, uid)
++       P_PROPERTY(P_ID euid READ euid)                                 PROPERTY(P_ID, euid)
++       P_PROPERTY(P_ID suid READ suid)                                 PROPERTY(P_ID, suid)
++       P_PROPERTY(P_ID fsuid READ fsuid)                               PROPERTY(P_ID, fsuid)
++       P_PROPERTY(P_ID gid READ gid)                                   PROPERTY(P_ID, gid)
++       P_PROPERTY(P_ID egid READ egid)                                 PROPERTY(P_ID, egid)
++       P_PROPERTY(P_ID sgid READ sgid)                                 PROPERTY(P_ID, sgid)
+        P_PROPERTY(qlonglong tracerpid READ tracerpid)                  PROPERTY(qlonglong, tracerpid)
+        P_PROPERTY(QByteArray tty READ tty)                             PROPERTY(QByteArray, tty)
+        P_PROPERTY(qlonglong userTime READ userTime)                    PROPERTY(qlonglong, userTime)
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processui/timeutil.cpp libksysguard-5.23.4/processui/timeutil.cpp
+--- libksysguard-5.23.4.orig/processui/timeutil.cpp	1970-01-01 01:00:00.000000000 +0100
++++ libksysguard-5.23.4/processui/timeutil.cpp	2021-12-16 01:21:22.611176500 +0100
+@@ -0,0 +1,48 @@
++/*
++    KSysGuard, the KDE System Guard
++
++    SPDX-FileCopyrightText: 2014 Gregor Mi <codestruct@posteo.org>
++
++    SPDX-License-Identifier: LGPL-2.0-or-later
++
++*/
++
++// Created to avoid globally including the Windows API
++
++#include "timeutil.h"
++
++#ifdef Q_OS_WIN
++#define WIN32_LEAN_AND_MEAN 1
++#include <Windows.h>
++#endif
++
++/**
++ * @Returns the amount of seconds passed since the system was booted
++ */
++
++long TimeUtil::systemUptimeSeconds()
++{
++#ifdef Q_OS_OSX
++    clock_serv_t cclock;
++    mach_timespec_t tp;
++
++    host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
++    clock_get_time(cclock, &tp);
++    mach_port_deallocate(mach_task_self(), cclock);
++    return tp.tv_sec;
++#elif defined(Q_OS_WIN)
++    return long(GetTickCount64() / 1000); // convert milliseconds to seconds
++#else
++    timespec tp;
++#ifdef Q_OS_LINUX
++    int isSuccess = clock_gettime(CLOCK_BOOTTIME, &tp);
++    // _MONOTONIC doesn't increase while the system is suspended,
++    // resulting in process start times in the future
++#else
++    int isSuccess =
++        clock_gettime(CLOCK_MONOTONIC, &tp); // see https://stackoverflow.com/questions/8357073/get-uptime-in-seconds-or-miliseconds-on-unix-like-systems
++#endif
++    Q_ASSERT(isSuccess == 0);
++    return tp.tv_sec;
++#endif
++}
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/processui/timeutil.h libksysguard-5.23.4/processui/timeutil.h
+--- libksysguard-5.23.4.orig/processui/timeutil.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/processui/timeutil.h	2021-12-16 00:53:04.954475300 +0100
+@@ -29,29 +29,7 @@
+     /**
+      * @Returns the amount of seconds passed since the system was booted
+      */
+-    static long systemUptimeSeconds()
+-    {
+-#ifdef Q_OS_OSX
+-        clock_serv_t cclock;
+-        mach_timespec_t tp;
+-
+-        host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
+-        clock_get_time(cclock, &tp);
+-        mach_port_deallocate(mach_task_self(), cclock);
+-#else
+-        timespec tp;
+-#ifdef Q_OS_LINUX
+-        int isSuccess = clock_gettime(CLOCK_BOOTTIME, &tp);
+-        // _MONOTONIC doesn't increase while the system is suspended,
+-        // resulting in process start times in the future
+-#else
+-        int isSuccess =
+-            clock_gettime(CLOCK_MONOTONIC, &tp); // see https://stackoverflow.com/questions/8357073/get-uptime-in-seconds-or-miliseconds-on-unix-like-systems
+-#endif
+-        Q_ASSERT(isSuccess == 0);
+-#endif
+-        return tp.tv_sec;
+-    }
++    static long systemUptimeSeconds();
+ 
+     /**
+      * @Returns the point in time when the system was booted
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/sensors/SensorDaemonInterface_p.h libksysguard-5.23.4/sensors/SensorDaemonInterface_p.h
+--- libksysguard-5.23.4.orig/sensors/SensorDaemonInterface_p.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/sensors/SensorDaemonInterface_p.h	2021-12-16 03:12:15.442095500 +0100
+@@ -10,6 +10,7 @@
+ #include <memory>
+ 
+ #include "systemstats/SensorInfo.h"
++#include "sensors_export.h"
+ 
+ class QDBusPendingCallWatcher;
+ 
+@@ -21,7 +22,7 @@
+  * This is mostly for convenience on top of the auto-generated KSysGuardDaemon
+  * D-Bus interface.
+  */
+-class SensorDaemonInterface : public QObject
++class SENSORS_EXPORT SensorDaemonInterface : public QObject
+ {
+     Q_OBJECT
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/sensors/SensorInfo_p.h libksysguard-5.23.4/sensors/SensorInfo_p.h
+--- libksysguard-5.23.4.orig/sensors/SensorInfo_p.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/sensors/SensorInfo_p.h	2021-12-16 00:54:37.045902300 +0100
+@@ -12,6 +12,7 @@
+ #include <QVariant>
+ 
+ #include "formatter/Unit.h"
++#include <common/_export.h>
+ 
+ namespace KSysGuard
+ {
+@@ -31,7 +32,7 @@
+     qreal max = 0;
+ };
+ 
+-class Q_DECL_EXPORT SensorData
++class LIBKSYSGUARD_EXPORT SensorData
+ {
+ public:
+     SensorData() = default;
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/sensors/SensorUnitModel.cpp libksysguard-5.23.4/sensors/SensorUnitModel.cpp
+--- libksysguard-5.23.4.orig/sensors/SensorUnitModel.cpp	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/sensors/SensorUnitModel.cpp	2021-12-16 00:33:29.385095300 +0100
+@@ -7,6 +7,7 @@
+ #include "SensorUnitModel.h"
+ 
+ #include <optional>
++#include <array>
+ 
+ #include <QScopeGuard>
+ 
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/signalplotter/CMakeLists.txt libksysguard-5.23.4/signalplotter/CMakeLists.txt
+--- libksysguard-5.23.4.orig/signalplotter/CMakeLists.txt	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/signalplotter/CMakeLists.txt	2021-12-16 03:50:53.608968800 +0100
+@@ -19,6 +19,9 @@
+         KSysGuard::ProcessCore
+ )
+ 
++generate_export_header(ksignalplotter)
++
++
+ set_target_properties(ksignalplotter PROPERTIES
+    VERSION ${KSYSGUARD_VERSION}
+    SOVERSION ${KSYSGUARD_SOVERSION}
+@@ -27,7 +30,7 @@
+ 
+ install(TARGETS ksignalplotter EXPORT libksysguardLibraryTargets ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+ 
+-install(FILES ksignalplotter.h DESTINATION ${KDE_INSTALL_INCLUDEDIR}/ksysguard COMPONENT Devel)
++install(FILES ksignalplotter.h ${CMAKE_CURRENT_BINARY_DIR}/ksignalplotter_export.h DESTINATION ${KDE_INSTALL_INCLUDEDIR}/ksysguard COMPONENT Devel)
+ 
+ if(BUILD_DESIGNERPLUGIN)
+     add_subdirectory(designer)
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/signalplotter/kgraphicssignalplotter.h libksysguard-5.23.4/signalplotter/kgraphicssignalplotter.h
+--- libksysguard-5.23.4.orig/signalplotter/kgraphicssignalplotter.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/signalplotter/kgraphicssignalplotter.h	2021-12-16 03:55:48.047653400 +0100
+@@ -13,6 +13,7 @@
+ #include <QList>
+ #include <QString>
+ #include <klocalizedstring.h>
++#include "ksignalplotter_export.h"
+ 
+ class QGraphicsSceneResizeEvent;
+ class KGraphicsSignalPlotterPrivate;
+@@ -50,7 +51,7 @@
+  *
+  *  \image KSignalPlotter.png  Example KGraphicsSignalPlotter with two beams
+  */
+-class Q_DECL_EXPORT KGraphicsSignalPlotter : public QGraphicsWidget
++class KSIGNALPLOTTER_EXPORT KGraphicsSignalPlotter : public QGraphicsWidget
+ {
+     Q_OBJECT
+     Q_PROPERTY(qreal minimumValue READ minimumValue WRITE setMinimumValue)
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/signalplotter/ksignalplotter.h libksysguard-5.23.4/signalplotter/ksignalplotter.h
+--- libksysguard-5.23.4.orig/signalplotter/ksignalplotter.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/signalplotter/ksignalplotter.h	2021-12-16 03:51:12.545950400 +0100
+@@ -13,6 +13,7 @@
+ #include <QString>
+ #include <QWidget>
+ #include <klocalizedstring.h>
++#include "ksignalplotter_export.h"
+ 
+ class QPaintEvent;
+ class QResizeEvent;
+@@ -52,7 +53,7 @@
+  *
+  *  \image KSignalPlotter.png  Example KSignalPlotter with two beams
+  */
+-class Q_DECL_EXPORT KSignalPlotter : public QWidget
++class KSIGNALPLOTTER_EXPORT KSignalPlotter : public QWidget
+ {
+     Q_OBJECT
+     Q_PROPERTY(qreal minimumValue READ minimumValue WRITE setMinimumValue)
+diff -Nrub -x '*~' -x '*\.rej' -x '*\.orig' -x '*\.o' -x '*\.pyc' -x CMakeLists.txt.user libksysguard-5.23.4.orig/systemstats/AggregateSensor.h libksysguard-5.23.4/systemstats/AggregateSensor.h
+--- libksysguard-5.23.4.orig/systemstats/AggregateSensor.h	2021-11-30 14:00:06.000000000 +0100
++++ libksysguard-5.23.4/systemstats/AggregateSensor.h	2021-12-16 03:02:47.498140500 +0100
+@@ -56,7 +56,7 @@
+     const std::unique_ptr<Private> d;
+ };
+ 
+-class Q_DECL_EXPORT PercentageSensor : public SensorProperty
++class SYSTEMSTATS_EXPORT PercentageSensor : public SensorProperty
+ {
+     Q_OBJECT
+ public:

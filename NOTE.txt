@@ -1,0 +1,4 @@
+manda pr a libexpat per esportare in automatico VSLANG=1033 per fixare https://github.com/libexpat/libexpat/issues/418
+dovrei mandare pr a kde craft per aggiungere vs2022?
+
+https://serverfault.com/questions/151196/how-does-windows-kill-a-process-exactly

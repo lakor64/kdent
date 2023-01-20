@@ -1,0 +1,6 @@
+missing deps:
+    ktexteditor -> plasma-workspace
+    networkmanager-qt -> plasma-workspace
+    libksysguard -> plasma-workspace
+    ksysguard -> libksysguard
+    
